@@ -13,10 +13,6 @@
 
 @implementation UIKitCategoryAdditionsViewController
 
-- (void)dealloc
-{
-    [super dealloc];
-}
 
 - (void)didReceiveMemoryWarning
 {

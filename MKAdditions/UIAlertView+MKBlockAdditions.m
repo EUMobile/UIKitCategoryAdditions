@@ -7,34 +7,51 @@
 //
 
 #import "UIAlertView+MKBlockAdditions.h"
-#import <objc/runtime.h>
 
-static char DISMISS_IDENTIFER;
-static char CANCEL_IDENTIFER;
+static DismissBlock _dismissBlock;
+static CancelBlock _cancelBlock;
+static TextInputPickeBLock _textInputDismissBlock;
 
 @implementation UIAlertView (Block)
 
-@dynamic cancelBlock;
-@dynamic dismissBlock;
-
-- (void)setDismissBlock:(DismissBlock)dismissBlock
-{
-    objc_setAssociatedObject(self, &DISMISS_IDENTIFER, dismissBlock, OBJC_ASSOCIATION_COPY_NONATOMIC);
++ (UIAlertView*) alertViewStylePlainTextInputWithTitle:(NSString*) title
+                            message:(NSString*) message
+                              defaultValue:(NSString *)defaultValue
+                  cancelButtonTitle:(NSString*) cancelButtonTitle
+                  otherButtonTitles:(NSArray*) otherButtons
+                          onDismiss:(TextInputPickeBLock)dismissed
+                           onCancel:(CancelBlock) cancelled {
+    
+    return [UIAlertView alertViewStylePlainTextInputWithTitle:title message:message defaultValue:defaultValue keyboardType:UIKeyboardTypeDefault cancelButtonTitle:cancelButtonTitle otherButtonTitles:otherButtons onDismiss:dismissed onCancel:cancelled];
 }
 
-- (DismissBlock)dismissBlock
-{
-    return objc_getAssociatedObject(self, &DISMISS_IDENTIFER);
-}
-
-- (void)setCancelBlock:(CancelBlock)cancelBlock
-{
-    objc_setAssociatedObject(self, &CANCEL_IDENTIFER, cancelBlock, OBJC_ASSOCIATION_COPY_NONATOMIC);
-}
-
-- (CancelBlock)cancelBlock
-{
-    return objc_getAssociatedObject(self, &CANCEL_IDENTIFER);
++ (UIAlertView*) alertViewStylePlainTextInputWithTitle:(NSString*) title
+                                               message:(NSString*) message
+                                          defaultValue:(NSString *)defaultValue
+                                          keyboardType:(UIKeyboardType)keyboardType
+                                     cancelButtonTitle:(NSString*) cancelButtonTitle
+                                     otherButtonTitles:(NSArray*) otherButtons
+                                             onDismiss:(TextInputPickeBLock)dismissed
+                                              onCancel:(CancelBlock) cancelled {
+    
+    _cancelBlock  = cancelled;
+    
+    _textInputDismissBlock  = [dismissed copy];
+    
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
+                                                    message:message
+                                                   delegate:(id)[self class]
+                                          cancelButtonTitle:cancelButtonTitle
+                                          otherButtonTitles:nil];
+    alert.alertViewStyle = UIAlertViewStylePlainTextInput;
+    [alert textFieldAtIndex:0].text = defaultValue;
+    [alert textFieldAtIndex:0].keyboardType = keyboardType;
+    
+    for(NSString *buttonTitle in otherButtons)
+        [alert addButtonWithTitle:buttonTitle];
+    
+    [alert show];
+    return alert;
 }
 
 
@@ -44,21 +61,22 @@ static char CANCEL_IDENTIFER;
           otherButtonTitles:(NSArray*) otherButtons
                   onDismiss:(DismissBlock) dismissed                   
                    onCancel:(CancelBlock) cancelled {
-        
+    
+    _cancelBlock  = cancelled;
+
+    _dismissBlock  = [dismissed copy];
+    
     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
                                                     message:message
-                                                   delegate:[self class]
+                                                   delegate:(id)[self class]
                                           cancelButtonTitle:cancelButtonTitle
                                           otherButtonTitles:nil];
-    
-    [alert setDismissBlock:dismissed];
-    [alert setCancelBlock:cancelled];
     
     for(NSString *buttonTitle in otherButtons)
         [alert addButtonWithTitle:buttonTitle];
     
     [alert show];
-    return [alert autorelease];
+    return alert;
 }
 
 + (UIAlertView*) alertViewWithTitle:(NSString*) title 
@@ -78,23 +96,34 @@ static char CANCEL_IDENTIFER;
                                           cancelButtonTitle:cancelButtonTitle
                                           otherButtonTitles: nil];
     [alert show];
-    return [alert autorelease];
+    return alert;
 }
 
 
 + (void)alertView:(UIAlertView*) alertView didDismissWithButtonIndex:(NSInteger) buttonIndex {
+    if (alertView.alertViewStyle == UIAlertViewStylePlainTextInput) {
+        if(buttonIndex == [alertView cancelButtonIndex]) {
+            if (_cancelBlock) {
+                _cancelBlock();
+            }
+        }  else {
+            if (_textInputDismissBlock) {
+                _textInputDismissBlock([alertView textFieldAtIndex:0], buttonIndex - 1); // cancel button is button 0
+            }
+            
+        }
+        return;
+    }
     
-	if(buttonIndex == [alertView cancelButtonIndex])
-	{
-		if (alertView.cancelBlock) {
-            alertView.cancelBlock();
+	if(buttonIndex == [alertView cancelButtonIndex]) {
+        if (_cancelBlock) {
+            _cancelBlock();
         }
-	}
-    else
-    {
-        if (alertView.dismissBlock) {
-            alertView.dismissBlock(buttonIndex - 1); // cancel button is button 0
+	}  else {
+        if (_dismissBlock) {
+            _dismissBlock(buttonIndex - 1); // cancel button is button 0
         }
+        
     }
 }
 

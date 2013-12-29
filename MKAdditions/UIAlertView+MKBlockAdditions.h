@@ -9,22 +9,35 @@
 #import <Foundation/Foundation.h>
 #import "MKBlockAdditions.h"
 
-@interface UIAlertView (Block) <UIAlertViewDelegate> 
-+ (UIAlertView*) alertViewWithTitle:(NSString*) title 
+@interface UIAlertView (Block) <UIAlertViewDelegate>
++ (UIAlertView*) alertViewWithTitle:(NSString*) title
                             message:(NSString*) message;
 
-+ (UIAlertView*) alertViewWithTitle:(NSString*) title 
++ (UIAlertView*) alertViewWithTitle:(NSString*) title
                             message:(NSString*) message
                   cancelButtonTitle:(NSString*) cancelButtonTitle;
 
-+ (UIAlertView*) alertViewWithTitle:(NSString*) title                    
-                            message:(NSString*) message 
++ (UIAlertView*) alertViewWithTitle:(NSString*) title
+                            message:(NSString*) message
                   cancelButtonTitle:(NSString*) cancelButtonTitle
                   otherButtonTitles:(NSArray*) otherButtons
-                          onDismiss:(DismissBlock) dismissed                   
+                          onDismiss:(DismissBlock) dismissed
                            onCancel:(CancelBlock) cancelled;
 
-@property (nonatomic, copy) DismissBlock dismissBlock;
-@property (nonatomic, copy) CancelBlock cancelBlock;
++ (UIAlertView*)alertViewStylePlainTextInputWithTitle:(NSString*) title
+                                              message:(NSString*) message
+                                         defaultValue:(NSString *)defaultValue
+                                    cancelButtonTitle:(NSString*) cancelButtonTitle
+                                    otherButtonTitles:(NSArray*) otherButtons
+                                            onDismiss:(TextInputPickeBLock)dismissed
+                                             onCancel:(CancelBlock) cancelled;
 
++ (UIAlertView*) alertViewStylePlainTextInputWithTitle:(NSString*) title
+                                               message:(NSString*) message
+                                          defaultValue:(NSString *)defaultValue
+                                          keyboardType:(UIKeyboardType)keyboardType
+                                     cancelButtonTitle:(NSString*) cancelButtonTitle
+                                     otherButtonTitles:(NSArray*) otherButtons
+                                             onDismiss:(TextInputPickeBLock)dismissed
+                                              onCancel:(CancelBlock) cancelled;
 @end

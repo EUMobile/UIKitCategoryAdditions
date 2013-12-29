@@ -39,14 +39,12 @@ static UIViewController *_presentVC;
                     onDismiss:(DismissBlock) dismissed                   
                      onCancel:(CancelBlock) cancelled
 {
-    [_cancelBlock release];
-    _cancelBlock  = [cancelled copy];
-    
-    [_dismissBlock release];
-    _dismissBlock  = [dismissed copy];
+ 
+    _cancelBlock  = cancelled;
+    _dismissBlock  = dismissed;
 
     UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:title 
-                                                             delegate:[self class] 
+                                                             delegate:(id)[self class] 
                                                     cancelButtonTitle:nil
                                                destructiveButtonTitle:destructiveButtonTitle 
                                                     otherButtonTitles:nil];
@@ -54,7 +52,7 @@ static UIViewController *_presentVC;
     for(NSString* thisButtonTitle in buttonTitles)
         [actionSheet addButtonWithTitle:thisButtonTitle];
     
-    [actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"")];
+    [actionSheet addButtonWithTitle:NSLocalizedString(@"取消", @"")];
     actionSheet.cancelButtonIndex = [buttonTitles count];
     
     if(destructiveButtonTitle)
@@ -69,7 +67,6 @@ static UIViewController *_presentVC;
     if([view isKindOfClass:[UIBarButtonItem class]])
         [actionSheet showFromBarButtonItem:(UIBarButtonItem*) view animated:YES];
     
-    [actionSheet release];
     
 }
 
@@ -79,19 +76,16 @@ static UIViewController *_presentVC;
                 onPhotoPicked:(PhotoPickedBlock) photoPicked                   
                      onCancel:(CancelBlock) cancelled
 {
-    [_cancelBlock release];
     _cancelBlock  = [cancelled copy];
     
-    [_photoPickedBlock release];
     _photoPickedBlock  = [photoPicked copy];
     
-    [_presentVC release];
-    _presentVC = [presentVC retain];
+    _presentVC = presentVC;
     
     int cancelButtonIndex = -1;
 
     UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:title 
-                                                             delegate:[self class] 
+                                                             delegate:(id)[self class] 
 													cancelButtonTitle:nil
 											   destructiveButtonTitle:nil
 													otherButtonTitles:nil];
@@ -107,7 +101,7 @@ static UIViewController *_presentVC;
 		cancelButtonIndex ++;
 	}
     
-	[actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"")];
+	[actionSheet addButtonWithTitle:NSLocalizedString(@"取消", @"")];
 	cancelButtonIndex ++;
 	
     actionSheet.tag = kPhotoActionSheetTag;
@@ -122,7 +116,6 @@ static UIViewController *_presentVC;
     if([view isKindOfClass:[UIBarButtonItem class]])
         [actionSheet showFromBarButtonItem:(UIBarButtonItem*) view animated:YES];
     
-    [actionSheet release];    
 }
 
 
@@ -132,59 +125,58 @@ static UIViewController *_presentVC;
     if(!editedImage)
         editedImage = (UIImage*) [info valueForKey:UIImagePickerControllerOriginalImage];
     
-    _photoPickedBlock(editedImage);
-	[picker dismissModalViewControllerAnimated:YES];	
-	[picker autorelease];
+    if (_photoPickedBlock) {
+        _photoPickedBlock(editedImage);
+    }
+    
+	[picker dismissModalViewControllerAnimated:YES];
 }
 
 
 + (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
 {
     // Dismiss the image selection and close the program
-    [_presentVC dismissModalViewControllerAnimated:YES];    
-	[picker autorelease];
-    [_presentVC release];
-    _cancelBlock();
+    [_presentVC dismissModalViewControllerAnimated:YES];
+    
+    if (_cancelBlock) {
+        _cancelBlock();
+    }
 }
 
 +(void)actionSheet:(UIActionSheet*) actionSheet didDismissWithButtonIndex:(NSInteger) buttonIndex
 {
-	if(buttonIndex == [actionSheet cancelButtonIndex])
-	{
-		_cancelBlock();
-	}
-    else
-    {
+	if(buttonIndex == [actionSheet cancelButtonIndex]) {
+        if (_cancelBlock) {
+            _cancelBlock();
+        }
+	} else {
         if(actionSheet.tag == kPhotoActionSheetTag)
-        {
-            if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
             {
+            if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
                 buttonIndex ++;
             }
-            if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypePhotoLibrary])
-            {
+            if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypePhotoLibrary]) {
                 buttonIndex ++;
             }
             
             
             UIImagePickerController *picker = [[UIImagePickerController alloc] init];
-            picker.delegate = [self class];
+            picker.delegate = (id)[self class];
             picker.allowsEditing = YES;
             
-            if(buttonIndex == 1) 
-            {                
+            if(buttonIndex == 1)  {                
                 picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
             }
-            else if(buttonIndex == 2)
-            {
+            else if(buttonIndex == 2) {
                 picker.sourceType = UIImagePickerControllerSourceTypeCamera;;
             }
             
             [_presentVC presentModalViewController:picker animated:YES];
-        }
-        else
-        {
-            _dismissBlock(buttonIndex);
+            }
+        else {
+            if (_dismissBlock) {
+                _dismissBlock(buttonIndex);
+            }
         }
     }
 }
